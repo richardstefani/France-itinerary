@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>TRIP_TITLE — Journey</title>
+
+<style>
+:root {
+  --ink: #1c1c2e;
+  --ink-soft: #4a4a68;
+  --ink-muted: #9898b8;
+  --paper: #f8f7f2;
+  --paper-warm: #efede4;
+  --card: #ffffff;
+  --accent: #c8782a;
+  --accent-soft: #f4e8d8;
+  --accent-dark: #a05e1e;
+  --green: #3a7d5a;
+  --green-soft: #e0f0e8;
+  --blue: #2a5f8a;
+  --blue-soft: #dceaf5;
+  --border: #e4e0d8;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --shadow: 0 2px 12px rgba(28,28,46,0.07);
+  --shadow-md: 0 4px 24px rgba(28,28,46,0.11);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.6;
+  overscroll-behavior: none;
+}
+
+/* ── LAYOUT ── */
+#app {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── HEADER ── */
+.itin-header {
+  background: var(--ink);
+  padding: 48px 20px 0;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+.itin-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 50% at 50% 110%, rgba(200,120,42,0.2) 0%, transparent 65%);
+  pointer-events: none;
+}
+.itin-title {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(24px, 7vw, 34px);
+  font-weight: 400;
+  color: #f8f7f2;
+  line-height: 1.15;
+  position: relative;
+  margin-bottom: 3px;
+}
+.itin-dates {
+  font-size: 12px;
+  font-weight: 300;
+  color: rgba(248,247,242,0.4);
+  letter-spacing: 0.06em;
+  position: relative;
+  margin-bottom: 22px;
+}
+.itin-eyebrow {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.itin-eyebrow::before {
+  content: '';
+  width: 18px; height: 1px;
+  background: var(--accent);
+  opacity: 0.5;
+}
+
+/* ── DAY TABS ── */
+.day-tabs {
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.day-tabs::-webkit-scrollbar { display: none; }
+.day-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 18px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  position: relative;
+  flex-shrink: 0;
+  transition: opacity 0.2s;
+}
+.day-tab::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transition: transform 0.22s;
+}
+.day-tab.active::after { transform: scaleX(1); }
+.day-tab-label {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(248,247,242,0.3);
+  transition: color 0.2s;
+  margin-bottom: 2px;
+}
+.day-tab.active .day-tab-label { color: var(--accent); }
+.day-tab-name {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(248,247,242,0.35);
+  transition: color 0.2s;
+}
+.day-tab.active .day-tab-name { color: #f8f7f2; }
+
+/* ── BODY ── */
+.itin-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.day-panel {
+  display: none;
+  padding: 22px 18px 40px;
+  max-width: 560px;
+  margin: 0 auto;
+  width: 100%;
+  animation: fadeUp 0.28s ease;
+}
+.day-panel.active { display: block; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(7px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.day-narrative {
+  font-size: 14px;
+  font-weight: 300;
+  font-style: italic;
+  color: var(--ink-soft);
+  line-height: 1.7;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 18px;
+}
+
+/* ── STOP CARDS ── */
+.stop-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(0,0,0,0.04);
+  transition: box-shadow 0.2s;
+}
+.stop-card:hover { box-shadow: var(--shadow-md); }
+.stop-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  padding: 15px 15px 13px;
+  cursor: pointer;
+  user-select: none;
+}
+.stop-time-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 44px;
+  flex-shrink: 0;
+}
+.stop-time {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  outline: none;
+  border-radius: 4px;
+  transition: background 0.15s;
+  cursor: text;
+  min-width: 20px;
+  text-align: center;
+}
+.stop-time:hover, .stop-time:focus { background: var(--accent-soft); }
+.stop-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin: 5px 0;
+  flex-shrink: 0;
+}
+.stop-line {
+  width: 1px;
+  flex: 1;
+  min-height: 14px;
+  background: var(--border);
+}
+.stop-info { flex: 1; min-width: 0; }
+.stop-category {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+.cat-eat { color: var(--accent); }
+.cat-see { color: var(--blue); }
+.cat-do  { color: var(--green); }
+.cat-travel { color: var(--ink-muted); }
+.cat-stay { color: #7a4aaa; }
+.stop-name {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--ink);
+  line-height: 1.25;
+  margin-bottom: 2px;
+  outline: none;
+  border-radius: 4px;
+  transition: background 0.15s;
+  cursor: text;
+  display: block;
+}
+.stop-name:hover, .stop-name:focus { background: var(--accent-soft); }
+.stop-subtitle {
+  font-size: 12px;
+  font-weight: 300;
+  color: var(--ink-muted);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.edit-hint {
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.stop-header:hover .edit-hint { opacity: 0.6; }
+.stop-expand-icon {
+  color: var(--ink-muted);
+  font-size: 11px;
+  transition: transform 0.2s;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+.stop-card.expanded .stop-expand-icon { transform: rotate(180deg); }
+.stop-detail {
+  display: none;
+  padding: 14px 15px 15px 72px;
+  border-top: 1px solid var(--border);
+}
+.stop-card.expanded .stop-detail { display: block; }
+.stop-notes {
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--ink-soft);
+  line-height: 1.7;
+  margin-bottom: 10px;
+}
+.stop-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.tag {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 3px 9px;
+  border-radius: 20px;
+  letter-spacing: 0.05em;
+}
+.tag-tip  { background: var(--accent-soft); color: var(--accent-dark); }
+.tag-book { background: #fde8e8; color: #c02020; }
+.tag-free { background: var(--green-soft); color: var(--green); }
+.tag-walk { background: var(--blue-soft); color: var(--blue); }
+.tag-bus  { background: #f0e8f5; color: #7a4aaa; }
+.stop-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--accent);
+  text-decoration: none;
+  letter-spacing: 0.03em;
+}
+.stop-link:hover { color: var(--accent-dark); }
+
+/* ── TIPS ── */
+.tips-card {
+  background: var(--ink);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin-top: 18px;
+  position: relative;
+  overflow: hidden;
+}
+.tips-card::before {
+  content: '';
+  position: absolute;
+  top: -20px; right: -20px;
+  width: 90px; height: 90px;
+  background: radial-gradient(circle, rgba(200,120,42,0.18) 0%, transparent 70%);
+}
+.tips-label {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 9px;
+}
+.tips-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.tips-list li {
+  font-size: 12px;
+  font-weight: 300;
+  color: rgba(248,247,242,0.6);
+  line-height: 1.55;
+  padding-left: 12px;
+  position: relative;
+}
+.tips-list li::before { content: '–'; position: absolute; left: 0; color: var(--accent); opacity: 0.55; }
+
+/* ── BOOKINGS ── */
+.bookings-section {
+  background: var(--paper-warm);
+  border-top: 1px solid var(--border);
+  padding: 20px 18px 36px;
+}
+.bookings-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.bookings-title {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  flex: 1;
+}
+.progress-pill {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--green);
+  background: var(--green-soft);
+  border-radius: 20px;
+  padding: 2px 9px;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.progress-bar-wrap {
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.progress-bar {
+  height: 100%;
+  background: var(--green);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+.bookings-list { display: flex; flex-direction: column; gap: 8px; }
+.booking-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card);
+  border-radius: var(--radius-sm);
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+.booking-row:active { transform: scale(0.98); }
+.booking-check {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+  background: var(--paper);
+}
+.booking-check svg { opacity: 0; transition: opacity 0.15s; color: white; }
+.booking-row.done .booking-check { background: var(--green); border-color: var(--green); }
+.booking-row.done .booking-check svg { opacity: 1; }
+.booking-row.done .booking-name { text-decoration: line-through; color: var(--ink-muted); }
+.booking-row.done .booking-sub { opacity: 0.5; }
+.booking-row-info { flex: 1; min-width: 0; }
+.booking-name { font-size: 13px; font-weight: 500; color: var(--ink); }
+.booking-sub  { font-size: 11px; font-weight: 300; color: var(--ink-muted); }
+.booking-badge {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: #fde8e8;
+  color: #c02020;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+.booking-badge.optional { background: var(--green-soft); color: var(--green); }
+.booking-row.done .booking-badge { background: var(--green-soft); color: var(--green); }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="itin-header">
+    <div class="itin-eyebrow">Journey</div>
+    <div class="itin-title" id="itin-title"></div>
+    <div class="itin-dates" id="itin-dates"></div>
+    <div class="day-tabs" id="day-tabs"></div>
+  </div>
+  <div class="itin-body" id="itin-body"></div>
+</div>
+
+<script>
+// ── TRIP DATA (injected) ──
+const TRIP = TRIP_DATA_PLACEHOLDER;
+
+// ── CONFIG ──
+const CAT = {
+  eat:    { label: 'Eat & Drink', icon: '◈', cls: 'cat-eat' },
+  see:    { label: 'See',         icon: '◉', cls: 'cat-see' },
+  do:     { label: 'Do',          icon: '◆', cls: 'cat-do' },
+  travel: { label: 'Travel',      icon: '→', cls: 'cat-travel' },
+  stay:   { label: 'Stay',        icon: '⌂', cls: 'cat-stay' }
+};
+const TAGS = {
+  tip:  { cls: 'tag-tip',  label: 'Insider tip' },
+  book: { cls: 'tag-book', label: 'Book ahead' },
+  free: { cls: 'tag-free', label: 'Free entry' },
+  walk: { cls: 'tag-walk', label: 'Walkable' },
+  bus:  { cls: 'tag-bus',  label: 'By bus' }
+};
+
+const STORAGE_KEY = 'journey_done_' + btoa(encodeURIComponent(TRIP.title || 'trip')).slice(0, 16);
+
+function $(id) { return document.getElementById(id); }
+
+// ── RENDER ──
+function render() {
+  $('itin-title').textContent = TRIP.title || 'Your Itinerary';
+  $('itin-dates').textContent = TRIP.dates || '';
+
+  const tabs = $('day-tabs');
+  const body = $('itin-body');
+  const savedDone = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+
+  (TRIP.days || []).forEach((day, i) => {
+    // Tab
+    const tab = document.createElement('div');
+    tab.className = 'day-tab' + (i === 0 ? ' active' : '');
+    tab.innerHTML = `<span class="day-tab-label">${day.label || 'Day '+(i+1)}</span>
+                     <span class="day-tab-name">${day.name || ''}</span>`;
+    tab.onclick = () => switchDay(i);
+    tabs.appendChild(tab);
+
+    // Panel
+    const panel = document.createElement('div');
+    panel.className = 'day-panel' + (i === 0 ? ' active' : '');
+    panel.id = 'panel-' + i;
+
+    let html = day.narrative ? `<p class="day-narrative">${day.narrative}</p>` : '';
+
+    (day.stops || []).forEach((stop, si) => {
+      const cat = CAT[stop.category] || CAT.see;
+      const tags = (stop.tags || []).map(t => TAGS[t] ? `<span class="tag ${TAGS[t].cls}">${TAGS[t].label}</span>` : '').join('');
+      const link = stop.link ? `<a class="stop-link" href="${stop.link}" target="_blank">
+        <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 9L9 2M9 2H5M9 2v4"/></svg>Visit website</a>` : '';
+      const isLast = si === (day.stops.length - 1);
+
+      html += `<div class="stop-card" id="sc-${i}-${si}">
+        <div class="stop-header" onclick="toggleStop('sc-${i}-${si}')">
+          <div class="stop-time-block">
+            <span class="stop-time" contenteditable="true" onclick="event.stopPropagation()">${stop.time || ''}</span>
+            <div class="stop-dot"></div>
+            ${!isLast ? '<div class="stop-line"></div>' : ''}
+          </div>
+          <div class="stop-info">
+            <div class="stop-category ${cat.cls}">${cat.icon} ${cat.label}</div>
+            <div class="stop-name" contenteditable="true" onclick="event.stopPropagation()">${stop.name || ''}</div>
+            <div class="stop-subtitle">${stop.subtitle || ''}<span class="edit-hint">edit</span></div>
+          </div>
+          <span class="stop-expand-icon">▼</span>
+        </div>
+        <div class="stop-detail">
+          ${stop.notes ? `<p class="stop-notes">${stop.notes}</p>` : ''}
+          ${tags ? `<div class="stop-tags">${tags}</div>` : ''}
+          ${link}
+        </div>
+      </div>`;
+    });
+
+    if (day.tips && day.tips.length) {
+      html += `<div class="tips-card"><div class="tips-label">Day tips</div><ul class="tips-list">
+        ${day.tips.map(t => `<li>${t}</li>`).join('')}</ul></div>`;
+    }
+
+    panel.innerHTML = html;
+    body.appendChild(panel);
+  });
+
+  // Bookings
+  if (TRIP.bookings && TRIP.bookings.length) {
+    const total = TRIP.bookings.length;
+    const doneCount = savedDone.filter(i => i < total).length;
+    const pct = total ? Math.round((doneCount / total) * 100) : 0;
+
+    const sec = document.createElement('div');
+    sec.className = 'bookings-section';
+    sec.innerHTML = `
+      <div class="bookings-progress">
+        <div class="bookings-title">Book in advance</div>
+        <span class="progress-pill" id="prog-pill">${doneCount}/${total} done</span>
+      </div>
+      <div class="progress-bar-wrap"><div class="progress-bar" id="prog-bar" style="width:${pct}%"></div></div>
+      <div class="bookings-list" id="bookings-list">
+        ${TRIP.bookings.map((b, bi) => {
+          const done = savedDone.includes(bi);
+          const optCls = b.required ? '' : 'optional';
+          const badge = done ? 'Done' : (b.required ? 'Required' : 'Optional');
+          const badgeCls = (done || !b.required) ? 'optional' : '';
+          return `<div class="booking-row${done ? ' done' : ''}" data-bi="${bi}" onclick="toggleBooking(${bi},${total})">
+            <div class="booking-check">
+              <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5.5l2.5 2.5 4.5-4.5"/></svg>
+            </div>
+            <div class="booking-row-info">
+              <div class="booking-name">${b.name || ''}</div>
+              <div class="booking-sub">${b.detail || ''}</div>
+            </div>
+            <span class="booking-badge ${badgeCls}">${badge}</span>
+          </div>`;
+        }).join('')}
+      </div>`;
+    body.appendChild(sec);
+  }
+}
+
+function switchDay(i) {
+  document.querySelectorAll('.day-tab').forEach((t,j) => t.classList.toggle('active', j===i));
+  document.querySelectorAll('.day-panel').forEach((p,j) => p.classList.toggle('active', j===i));
+  $('itin-body').scrollTop = 0;
+}
+
+function toggleStop(id) {
+  const c = document.getElementById(id);
+  if (c) c.classList.toggle('expanded');
+}
+
+function toggleBooking(bi, total) {
+  const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  const idx = saved.indexOf(bi);
+  if (idx === -1) saved.push(bi); else saved.splice(idx, 1);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+
+  document.querySelectorAll('.booking-row').forEach(row => {
+    if (parseInt(row.dataset.bi) !== bi) return;
+    const isDone = saved.includes(bi);
+    row.classList.toggle('done', isDone);
+    const badge = row.querySelector('.booking-badge');
+    if (badge) {
+      const isOpt = TRIP.bookings[bi] && !TRIP.bookings[bi].required;
+      badge.textContent = isDone ? 'Done' : (isOpt ? 'Optional' : 'Required');
+      badge.className = 'booking-badge' + ((isDone || isOpt) ? ' optional' : '');
+    }
+  });
+
+  const doneCount = saved.filter(i => i < total).length;
+  const pct = Math.round((doneCount / total) * 100);
+  const pill = $('prog-pill'), bar = $('prog-bar');
+  if (pill) pill.textContent = `${doneCount}/${total} done`;
+  if (bar) bar.style.width = pct + '%';
+}
+
+render();
+</script>
+</body>
+</html>
