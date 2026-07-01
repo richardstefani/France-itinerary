@@ -1,0 +1,9 @@
+{
+  "name": "france-itinerary",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Interactive itinerary for France, July 2026, with cross-device synced edits via Netlify Blobs.",
+  "dependencies": {
+    "@netlify/blobs": "^10.7.9"
+  }
+}
